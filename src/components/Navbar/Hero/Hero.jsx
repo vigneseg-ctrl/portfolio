@@ -1,4 +1,9 @@
 import './Hero.css';
+// At the top of Hero.js
+import profilePhoto from '../assets/images/vigneswaran-portfolio.png'
+
+// In JSX
+<img src={profilePhoto} alt="Vigneswaran - Frontend Developer" className="hero-photo" />
  
 // ── Tech stack pills data ────────────────────────────────────
 // Add or remove technologies here — they render automatically
@@ -58,7 +63,7 @@ const Hero = () => {
               {/* Outline button — opens resume in new tab */}
               {/* rel="noopener noreferrer" is a SECURITY requirement with target="_blank" */}
               <a
-                href={`${process.env.PUBLIC_URL}/resume.pdf`}
+                href="/portfolio/Vigneswaran_resume.pdf"
                 className="btn btn-outline"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -94,7 +99,7 @@ const Hero = () => {
                 object-fit: cover in CSS keeps it circular without stretching
               */}
               <img
-                src={`${process.env.PUBLIC_URL}/assets/images/profile.jpg`}
+                src={profilePhoto}
                 alt="Vigneswaran H - Senior Frontend Developer"
                 className="hero-photo"
               />
