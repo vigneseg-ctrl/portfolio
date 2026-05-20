@@ -58,7 +58,7 @@ const Hero = () => {
               {/* Outline button — opens resume in new tab */}
               {/* rel="noopener noreferrer" is a SECURITY requirement with target="_blank" */}
               <a
-                href="/Vigneswaran_resume.pdf"
+                href={`${process.env.PUBLIC_URL}/resume.pdf`}
                 className="btn btn-outline"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -94,7 +94,7 @@ const Hero = () => {
                 object-fit: cover in CSS keeps it circular without stretching
               */}
               <img
-                src="src/assets/images/vigneswaran-portfolio.png"
+                src={`${process.env.PUBLIC_URL}/assets/images/profile.jpg`}
                 alt="Vigneswaran H - Senior Frontend Developer"
                 className="hero-photo"
               />

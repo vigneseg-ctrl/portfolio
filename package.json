@@ -3,13 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://vigneseg-ctrl.github.io/vigneswaran_portfolio",
+  "homepage": "https://vigneseg-ctrl.github.io/portfolio",
   "scripts": {
-
     "dev": "vite",
     "build": "vite build",
+    "deploy":"gh-pages -d dist",
     "lint": "eslint .",
     "preview": "vite preview"
+    
   },
   "dependencies": {
     "react": "^19.2.5",
