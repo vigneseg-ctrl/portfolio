@@ -1,0 +1,1888 @@
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
+from reportlab.lib.colors import HexColor
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+    PageBreak, HRFlowable, KeepTogether
+)
+
+W, H = A4
+MARGIN = 2 * cm
+CW = W - 2 * MARGIN
+
+TEAL        = HexColor("#0D9488")
+TEAL_LIGHT  = HexColor("#CCFBF1")
+TEAL_DARK   = HexColor("#085041")
+TEAL_MID    = HexColor("#0F6E56")
+BLUE        = HexColor("#185FA5")
+BLUE_LIGHT  = HexColor("#EFF6FF")
+BLUE_DARK   = HexColor("#0C447C")
+PURPLE      = HexColor("#534AB7")
+PURPLE_LIGHT= HexColor("#EEEDFE")
+PURPLE_DARK = HexColor("#3C3489")
+AMBER       = HexColor("#854F0B")
+AMBER_LIGHT = HexColor("#FAEEDA")
+AMBER_DARK  = HexColor("#633806")
+RED_LIGHT   = HexColor("#FCEBEB")
+RED_DARK    = HexColor("#A32D2D")
+DARK        = HexColor("#1E293B")
+MUTED       = HexColor("#64748B")
+WHITE       = HexColor("#FFFFFF")
+GRAY_BG     = HexColor("#F8F9FA")
+GRAY_BORDER = HexColor("#E2E8F0")
+SLATE       = HexColor("#F1F5F9")
+CODE_BG     = HexColor("#1E293B")
+CODE_FG     = HexColor("#A5F3FC")
+ORANGE      = HexColor("#C2410C")
+GREEN_LIGHT = HexColor("#E1F5EE")
+
+def S(name, **kw): return ParagraphStyle(name, **kw)
+def sp(n=8): return Spacer(1, n)
+
+def divider():
+    return HRFlowable(width=CW, thickness=0.5, color=GRAY_BORDER, spaceAfter=6, spaceBefore=6)
+
+def teal_rule():
+    return HRFlowable(width=CW, thickness=2.5, color=TEAL, spaceAfter=8, spaceBefore=2)
+
+def safe(text):
+    if '<b>' in text or '<br' in text or '<font' in text or '<i>' in text:
+        return text
+    return text.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+
+def body(text):
+    return Paragraph(safe(text), S('b', fontName='Helvetica', fontSize=10, textColor=DARK,
+        leading=15, spaceAfter=5, alignment=TA_JUSTIFY))
+
+def label(text, color=MUTED):
+    return Paragraph(text, S('lbl', fontName='Helvetica-Bold', fontSize=7.5, textColor=color,
+        leading=10, spaceBefore=10, spaceAfter=3, letterSpacing=0.8))
+
+def h1(text):
+    return [sp(4),
+        Paragraph(safe(text), S('h1', fontName='Helvetica-Bold', fontSize=19,
+            textColor=DARK, leading=23, spaceAfter=4)),
+        teal_rule(), sp(2)]
+
+def h2(text, color=TEAL):
+    return Paragraph(safe(text), S('h2', fontName='Helvetica-Bold', fontSize=13,
+        textColor=color, spaceBefore=14, spaceAfter=5, leading=17))
+
+def h3(text, color=DARK):
+    return Paragraph(safe(text), S('h3', fontName='Helvetica-Bold', fontSize=11,
+        textColor=color, spaceBefore=10, spaceAfter=4, leading=15))
+
+def code_block(lines):
+    rows = [[Paragraph(
+    safe(ln) if ln.strip() else ' ',
+    S(
+        'cl',
+        fontName='Courier',
+        fontSize=8.5,
+        textColor=CODE_FG,
+        leading=13,
+        leftIndent=4
+    )
+)] for ln in lines]
+    t = Table(rows, colWidths=[CW])
+    t.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0),(-1,-1), CODE_BG),
+        ('TOPPADDING',    (0,0),(-1,-1), 2),
+        ('BOTTOMPADDING', (0,0),(-1,-1), 2),
+        ('LEFTPADDING',   (0,0),(-1,-1), 8),
+        ('RIGHTPADDING',  (0,0),(-1,-1), 8),
+        ('TOPPADDING',    (0,0),(0,0),   8),
+        ('BOTTOMPADDING', (0,-1),(0,-1), 8),
+    ]))
+    return t
+
+def box(lbl_text, content, bg, border, lc, tc=None):
+    tc = tc or DARK
+    sc = content if ('<b>' in content or '<br' in content or '<font' in content) else safe(content)
+    rows = [
+        [Paragraph(lbl_text, S('bl', fontName='Helvetica-Bold', fontSize=9.5, textColor=lc, leading=13))],
+        [Paragraph(sc, S('bc', fontName='Helvetica', fontSize=9.5, textColor=tc, leading=14, alignment=TA_JUSTIFY))],
+    ]
+    t = Table(rows, colWidths=[CW])
+    t.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0),(-1,-1), bg),
+        ('LINEBEFORE',    (0,0),(-1,-1), 3, border),
+        ('LINEABOVE',     (0,0),(-1,0),  1, border),
+        ('LINEBELOW',     (0,-1),(-1,-1),1, border),
+        ('TOPPADDING',    (0,0),(-1,-1), 6),
+        ('BOTTOMPADDING', (0,0),(-1,-1), 6),
+        ('LEFTPADDING',   (0,0),(-1,-1), 10),
+        ('RIGHTPADDING',  (0,0),(-1,-1), 10),
+    ]))
+    return t
+
+def interview_box(question, answer):
+    q_row = [Paragraph(f'<b>Q: {safe(question)}</b>',
+        S('iq', fontName='Helvetica-Bold', fontSize=9.5, textColor=BLUE_DARK, leading=13))]
+    a_row = [Paragraph(f'<b>A:</b> {safe(answer)}',
+        S('ia', fontName='Helvetica', fontSize=9.5, textColor=DARK, leading=14, alignment=TA_JUSTIFY))]
+    t = Table([q_row, a_row], colWidths=[CW])
+    t.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0),(0,0), BLUE_LIGHT),
+        ('BACKGROUND',    (0,1),(0,1), WHITE),
+        ('LINEBEFORE',    (0,0),(-1,-1), 3, BLUE),
+        ('LINEABOVE',     (0,0),(-1,0),  1, BLUE),
+        ('LINEBELOW',     (0,-1),(-1,-1),1, BLUE),
+        ('TOPPADDING',    (0,0),(-1,-1), 6),
+        ('BOTTOMPADDING', (0,0),(-1,-1), 6),
+        ('LEFTPADDING',   (0,0),(-1,-1), 10),
+        ('RIGHTPADDING',  (0,0),(-1,-1), 10),
+    ]))
+    return t
+
+def topic_header(title, subtitle, bg, fg):
+    t = Table([[
+        Paragraph(f'<b>{safe(title)}</b>',
+            S('th', fontName='Helvetica-Bold', fontSize=13, textColor=fg, leading=17)),
+        Paragraph(safe(subtitle),
+            S('ts', fontName='Helvetica', fontSize=9.5, textColor=fg, leading=14)),
+    ]], colWidths=[5*cm, CW-5*cm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0),(-1,-1), bg),
+        ('TOPPADDING',    (0,0),(-1,-1), 10),
+        ('BOTTOMPADDING', (0,0),(-1,-1), 10),
+        ('LEFTPADDING',   (0,0),(-1,-1), 12),
+        ('RIGHTPADDING',  (0,0),(-1,-1), 12),
+        ('VALIGN',        (0,0),(-1,-1), 'MIDDLE'),
+        ('LINEBELOW',     (0,-1),(-1,-1), 2, fg),
+    ]))
+    return t
+
+def bullet_row(items, dot_color=TEAL_MID):
+    rows = []
+    for item in items:
+        t = Table([[
+            Paragraph('•', S('bd', fontName='Helvetica-Bold', fontSize=12, textColor=dot_color, leading=15)),
+            Paragraph(safe(item), S('bi', fontName='Helvetica', fontSize=9.5, textColor=DARK, leading=14, alignment=TA_JUSTIFY)),
+        ]], colWidths=[0.5*cm, CW-0.5*cm])
+        t.setStyle(TableStyle([
+            ('TOPPADDING',    (0,0),(-1,-1), 3),
+            ('BOTTOMPADDING', (0,0),(-1,-1), 3),
+            ('LEFTPADDING',   (0,0),(-1,-1), 4),
+            ('RIGHTPADDING',  (0,0),(-1,-1), 4),
+            ('VALIGN',        (0,0),(-1,-1), 'TOP'),
+        ]))
+        rows.append(t)
+        rows.append(sp(2))
+    return rows
+
+def on_page(canvas, doc):
+    canvas.saveState()
+    canvas.setFont('Helvetica', 8)
+    canvas.setFillColor(MUTED)
+    canvas.drawString(MARGIN, H-1.3*cm, 'Frontend Interview Mastery Guide')
+    canvas.setFillColor(TEAL)
+    canvas.setFont('Helvetica-Bold', 8)
+    canvas.drawRightString(W-MARGIN, H-1.3*cm, 'JavaScript  •  React  •  Next.js  •  Performance')
+    canvas.setStrokeColor(TEAL)
+    canvas.setLineWidth(1)
+    canvas.line(MARGIN, H-1.5*cm, W-MARGIN, H-1.5*cm)
+    canvas.setFont('Helvetica', 8)
+    canvas.setFillColor(MUTED)
+    canvas.drawCentredString(W/2, 1.1*cm, f'Page {doc.page}')
+    canvas.setStrokeColor(GRAY_BORDER)
+    canvas.setLineWidth(0.5)
+    canvas.line(MARGIN, 1.45*cm, W-MARGIN, 1.45*cm)
+    canvas.restoreState()
+
+# ═══════════════════════════════════════════════════════════════
+story = []
+
+# ── COVER ──────────────────────────────────────────────────────
+story += [sp(50),
+    Paragraph('Frontend Developer', S('cv1', fontName='Helvetica-Bold', fontSize=36,
+        textColor=TEAL, alignment=TA_CENTER, spaceAfter=4)),
+    Paragraph('Interview Mastery Guide', S('cv2', fontName='Helvetica-Bold', fontSize=36,
+        textColor=DARK, alignment=TA_CENTER, spaceAfter=10)),
+    HRFlowable(width=7*cm, thickness=2.5, color=TEAL, hAlign='CENTER', spaceAfter=14, spaceBefore=4),
+    Paragraph('Topic explanation  •  How to say it in an interview  •  Logic understanding  •  Code examples',
+        S('cv3', fontName='Helvetica', fontSize=12, textColor=MUTED, alignment=TA_CENTER, spaceAfter=6)),
+    sp(16),
+]
+
+cover_data = [[
+    [Paragraph('<b>JavaScript</b>', S('c1', fontName='Helvetica-Bold', fontSize=11, textColor=TEAL_DARK, alignment=TA_CENTER, leading=14)),
+     Paragraph('Arrays, Objects\nFunctions, Closures\nAsync/Await', S('c1b', fontName='Helvetica', fontSize=9, textColor=DARK, alignment=TA_CENTER, leading=13))],
+    [Paragraph('<b>React.js</b>', S('c2', fontName='Helvetica-Bold', fontSize=11, textColor=BLUE_DARK, alignment=TA_CENTER, leading=14)),
+     Paragraph('Hooks, State, Props\nContext, Custom Hooks\nPerformance', S('c2b', fontName='Helvetica', fontSize=9, textColor=DARK, alignment=TA_CENTER, leading=13))],
+    [Paragraph('<b>Next.js</b>', S('c3', fontName='Helvetica-Bold', fontSize=11, textColor=PURPLE_DARK, alignment=TA_CENTER, leading=14)),
+     Paragraph('App Router, SSR/SSG\nServer Components\nAPI Routes', S('c3b', fontName='Helvetica', fontSize=9, textColor=DARK, alignment=TA_CENTER, leading=13))],
+    [Paragraph('<b>TypeScript</b>', S('c4', fontName='Helvetica-Bold', fontSize=11, textColor=AMBER_DARK, alignment=TA_CENTER, leading=14)),
+     Paragraph('Types, Interfaces\nGenerics, Typing\nBest practices', S('c4b', fontName='Helvetica', fontSize=9, textColor=DARK, alignment=TA_CENTER, leading=13))],
+]]
+ct = Table(cover_data, colWidths=[CW/4]*4)
+ct.setStyle(TableStyle([
+    ('BACKGROUND',(0,0),(0,0), TEAL_LIGHT),
+    ('BACKGROUND',(1,0),(1,0), BLUE_LIGHT),
+    ('BACKGROUND',(2,0),(2,0), PURPLE_LIGHT),
+    ('BACKGROUND',(3,0),(3,0), AMBER_LIGHT),
+    ('GRID',(0,0),(-1,-1), 0.5, WHITE),
+    ('TOPPADDING',(0,0),(-1,-1), 12),
+    ('BOTTOMPADDING',(0,0),(-1,-1), 12),
+    ('LEFTPADDING',(0,0),(-1,-1), 6),
+    ('RIGHTPADDING',(0,0),(-1,-1), 6),
+    ('VALIGN',(0,0),(-1,-1), 'TOP'),
+]))
+story += [ct, sp(16)]
+story.append(box('How to use this guide',
+    'Each topic has 4 parts: (1) Plain English explanation — what it actually means. '
+    '(2) How to explain it in an interview — the exact words to use. '
+    '(3) Logical understanding — how it works internally. '
+    '(4) Code example — working code with comments.',
+    TEAL_LIGHT, TEAL, TEAL_DARK))
+story.append(PageBreak())
+
+# ═══════════════════════════════════════════════════════════════
+# PART 1 — JAVASCRIPT
+# ═══════════════════════════════════════════════════════════════
+story += h1("Part 1 — JavaScript Fundamentals")
+story.append(body(
+    'JavaScript is the programming language that makes web pages interactive. '
+    'Every React app, every Next.js app, every frontend framework is built on JavaScript. '
+    'Strong JavaScript is the foundation — without it, you will always feel uncertain in React. '
+    'This part covers the topics that come up in almost every frontend interview.'
+))
+story.append(PageBreak())
+
+# ── TOPIC 1: Arrays ────────────────────────────────────────────
+story.append(topic_header('Topic 1 — Arrays', 'The most used data structure in JavaScript', TEAL_LIGHT, TEAL_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'An array is an ordered list of values stored in one variable. Think of it like a numbered shelf in a shop — '
+    'shelf 0 has mangoes, shelf 1 has bananas, shelf 2 has apples. '
+    'You access each item by its position number, called an index. '
+    'Arrays are the backbone of all frontend work: a list of products, users, orders, messages — '
+    'all stored as arrays.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING — HOW IT WORKS INSIDE'))
+story += bullet_row([
+    'Arrays are stored in memory as a contiguous block. Each index is an offset from the start.',
+    'Index always starts at 0. The last item is always at index array.length - 1.',
+    'Arrays in JavaScript are dynamic — they grow and shrink automatically. No fixed size needed.',
+    'An array can hold any type: strings, numbers, objects, even other arrays.',
+], TEAL_MID)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'What is an array in JavaScript?',
+    'An array is an ordered, indexed collection of values. Each value sits at a numbered position starting from zero. '
+    'JavaScript arrays are dynamic, so they grow and shrink as needed. They can hold any data type — '
+    'strings, numbers, objects, or even other arrays. In React, I use arrays constantly — '
+    'for rendering lists of components using map(), filtering data with filter(), '
+    'and computing totals with reduce().'
+))
+story.append(sp(4))
+story.append(interview_box(
+    'What is the difference between map(), filter(), and reduce()?',
+    'All three iterate over an array but have different purposes. '
+    'map() transforms every item and always returns a new array of the same length — I use it to render lists in React. '
+    'filter() keeps only items that pass a condition and returns a shorter array — I use it for search and category filtering. '
+    'reduce() collapses the entire array into a single value — I use it for totals, groupings, and summaries. '
+    'A real example: to get total revenue from delivered orders, I would filter delivered ones, map to get prices, then reduce to sum them.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    '// Arrays — creation and access',
+    'const fruits = ["mango", "banana", "apple"];',
+    'console.log(fruits[0]);        // "mango"  (index starts at 0)',
+    'console.log(fruits.length);    // 3',
+    '',
+    '// map() — transform every item, returns same length',
+    'const prices = [100, 200, 300];',
+    'const withTax = prices.map(p => p * 1.18);',
+    'console.log(withTax);  // [118, 236, 354]',
+    '',
+    '// filter() — keep matching items, returns shorter array',
+    'const nums = [1, 2, 3, 4, 5, 6];',
+    'const evens = nums.filter(n => n % 2 === 0);',
+    'console.log(evens);  // [2, 4, 6]',
+    '',
+    '// reduce() — collapse to one value',
+    'const total = prices.reduce((sum, p) => sum + p, 0);',
+    'console.log(total);  // 600',
+    '',
+    '// Chaining — filter + map + reduce together',
+    'const orders = [',
+    '  { product: "Laptop", price: 50000, status: "delivered" },',
+    '  { product: "Phone",  price: 20000, status: "pending"   },',
+    '  { product: "Tablet", price: 15000, status: "delivered" },',
+    '];',
+    'const revenue = orders',
+    '  .filter(o => o.status === "delivered")',
+    '  .map(o => o.price)',
+    '  .reduce((sum, p) => sum + p, 0);',
+    'console.log(revenue);  // 65000',
+]))
+story.append(sp(8))
+story.append(divider())
+
+# ── TOPIC 2: Objects ───────────────────────────────────────────
+story.append(sp(6))
+story.append(topic_header('Topic 2 — Objects', 'Key-value pairs — the main data format in React', BLUE_LIGHT, BLUE_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'An object stores data as key-value pairs — like a form with fields. '
+    'name: "Vigneswaran", age: 28, city: "Bangalore". '
+    'Every piece of API data you receive is an object. Every React component prop is an object. '
+    'Every Redux state is an object. Objects are everywhere in frontend development.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'Dot notation (user.name) is used when you know the key name at coding time.',
+    'Bracket notation (user[key]) is used when the key is stored in a variable — common in dynamic UIs.',
+    'Destructuring (const { name, city } = user) creates new variables from object properties — used in every React component.',
+    'Spread operator ({ ...user, role: "admin" }) creates a new object with all existing properties plus new ones — critical for React state updates.',
+    'Object.keys(), Object.values(), Object.entries() let you loop through objects when you do not know the keys in advance.',
+], BLUE)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'Explain object destructuring and why you use it in React.',
+    'Object destructuring is a way to extract values from an object into individual variables in one line. '
+    'Instead of writing const name = user.name; const city = user.city; separately, '
+    'I write const { name, city } = user and get both variables instantly. '
+    'In React I use this constantly — when receiving props I destructure them: '
+    'function Card({ title, onClick }) rather than accessing props.title and props.onClick. '
+    'It makes the code cleaner and immediately communicates which properties a component needs.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    'const user = { name: "Vigneswaran", age: 28, city: "Bangalore", role: "developer" };',
+    '',
+    '// Dot notation',
+    'console.log(user.city);         // "Bangalore"',
+    '',
+    '// Bracket notation (key in a variable)',
+    'const field = "name";',
+    'console.log(user[field]);       // "Vigneswaran"',
+    '',
+    '// Destructuring — used in every React component',
+    'const { name, city } = user;',
+    'console.log(name, city);        // "Vigneswaran" "Bangalore"',
+    '',
+    '// Rename during destructuring',
+    'const { name: fullName } = user;',
+    'console.log(fullName);          // "Vigneswaran"',
+    '',
+    '// Spread — create new object (critical in React state)',
+    'const updated = { ...user, role: "senior developer" };',
+    '// user is unchanged. updated has all original props + new role.',
+    '',
+    '// Loop through object',
+    'for (const [key, value] of Object.entries(user)) {',
+    '  console.log(`${key}: ${value}`);',
+    '}',
+]))
+story.append(PageBreak())
+
+# ── TOPIC 3: Functions + Closures ─────────────────────────────
+story.append(topic_header('Topic 3 — Functions and Closures', 'The foundation of React hooks and callbacks', PURPLE_LIGHT, PURPLE_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'A function is a reusable block of code. You give it input, it does something, it gives back output. '
+    'Arrow functions are the modern shorthand syntax. '
+    'A closure is when a function remembers the variables from the scope where it was created, '
+    'even after that outer function has finished running. '
+    'This sounds complex but you use closures every day — every React event handler is a closure, '
+    'every useEffect callback is a closure, every custom hook uses closures.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'Every function in JavaScript creates its own scope — a private space for its variables.',
+    'A closure happens when an inner function uses a variable from its outer function. The inner function "closes over" that variable.',
+    'This is why useState works: the setter function closes over the state value and remembers it between renders.',
+    'Event handlers in React are closures — they close over the current state values at the time of creation.',
+    'IIFE (Immediately Invoked Function Expression) is a closure pattern used for encapsulation.',
+], PURPLE)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'What is a closure? Give a real example.',
+    'A closure is when a function retains access to variables from its outer scope even after the outer function has finished executing. '
+    'The inner function "closes over" those variables. '
+    'A practical example in React: when I write a click handler inside a component, '
+    'it is a closure — it has access to the component\'s state and props even though '
+    'it runs later when the user clicks. Another example is a counter factory — '
+    'a function that returns another function, and the inner function remembers the count variable. '
+    'Closures are the reason React hooks like useState and useCallback work the way they do.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    '// Arrow functions',
+    'const add = (a, b) => a + b;           // one-liner, auto return',
+    'const greet = (name) => {              // multi-line needs explicit return',
+    '  const msg = `Hello, ${name}!`;',
+    '  return msg;',
+    '};',
+    '',
+    '// Closure — function remembers outer variable',
+    'function makeCounter() {',
+    '  let count = 0;              // count lives in makeCounter\'s scope',
+    '  return function() {         // inner function closes over count',
+    '    count++;',
+    '    return count;',
+    '  };',
+    '}',
+    'const counter = makeCounter();',
+    'console.log(counter());  // 1',
+    'console.log(counter());  // 2  (count is remembered!)',
+    'console.log(counter());  // 3',
+    '',
+    '// Closure in React — event handler closes over state',
+    "// Every time you write: onClick={() => setCount(count + 1)}",
+    "// That arrow function is a closure over 'count'",
+    '',
+    '// Practical closure — debounce function',
+    'function debounce(fn, delay) {',
+    '  let timer;                         // timer is closed over',
+    '  return function(...args) {',
+    '    clearTimeout(timer);             // cancel previous call',
+    '    timer = setTimeout(() => fn(...args), delay);',
+    '  };',
+    '}',
+    'const search = debounce((query) => fetchResults(query), 300);',
+]))
+story.append(PageBreak())
+
+# ── TOPIC 4: Async/Await and Promises ─────────────────────────
+story.append(topic_header('Topic 4 — Async/Await and Promises', 'How JavaScript handles time-consuming operations', AMBER_LIGHT, AMBER_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'JavaScript runs one line at a time. But some operations take time — fetching data from an API, '
+    'reading a file, waiting for a timer. If JavaScript waited for each one, the page would freeze. '
+    'Promises represent a value that will be available in the future — it is either pending, fulfilled, or rejected. '
+    'Async/Await is a cleaner way to write code that waits for Promises. '
+    'In React, you use async/await every time you call an API inside useEffect.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'JavaScript is single-threaded — one operation at a time. Async operations are handed off to the browser\'s Web APIs.',
+    'A Promise has 3 states: pending (waiting), fulfilled (success with value), rejected (failed with error).',
+    '.then() runs when the Promise fulfills. .catch() runs when it rejects. .finally() always runs.',
+    'async makes a function always return a Promise. await pauses execution inside that function until the Promise resolves.',
+    'Always use try/catch with async/await to handle errors — unhandled rejections can crash your app.',
+    'Promise.all() runs multiple async operations in parallel — much faster than sequential awaits.',
+], AMBER)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'Explain Promises and async/await. When would you use Promise.all()?',
+    'A Promise represents the eventual result of an asynchronous operation — it can be pending, fulfilled, or rejected. '
+    'Async/Await is syntactic sugar over Promises that makes async code read like synchronous code. '
+    'I prefer async/await over .then() chains because it is easier to read and debug. '
+    'I would use Promise.all() when I need to fetch multiple independent pieces of data simultaneously — '
+    'for example, fetching a user profile and their order history at the same time. '
+    'Promise.all() runs them in parallel and waits for all to complete, '
+    'whereas awaiting them sequentially would be much slower. '
+    'I always wrap async/await in try/catch for error handling.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    '// Promise — basic usage',
+    'const fetchUser = () => {',
+    '  return new Promise((resolve, reject) => {',
+    '    setTimeout(() => {',
+    '      resolve({ name: "Vigneswaran", role: "dev" });  // success',
+    '      // reject(new Error("Not found"));              // failure',
+    '    }, 1000);',
+    '  });',
+    '};',
+    '',
+    '// async/await — cleaner syntax',
+    'async function loadUserData() {',
+    '  try {',
+    '    const user = await fetchUser();',
+    '    console.log(user.name);  // "Vigneswaran"',
+    '  } catch (error) {',
+    '    console.error("Failed:", error.message);',
+    '  } finally {',
+    '    console.log("Done");  // always runs',
+    '  }',
+    '}',
+    '',
+    '// Fetch API — how you call real APIs',
+    'async function getProducts() {',
+    '  try {',
+    '    const res = await fetch("https://api.example.com/products");',
+    '    if (!res.ok) throw new Error(`HTTP error: ${res.status}`);',
+    '    const data = await res.json();',
+    '    return data;',
+    '  } catch (err) {',
+    '    console.error(err);',
+    '    return [];',
+    '  }',
+    '}',
+    '',
+    '// Promise.all — parallel fetching (faster)',
+    'async function loadDashboard(userId) {',
+    '  const [user, orders, notifications] = await Promise.all([',
+    '    fetch(`/api/users/${userId}`).then(r => r.json()),',
+    '    fetch(`/api/orders/${userId}`).then(r => r.json()),',
+    '    fetch(`/api/notifications/${userId}`).then(r => r.json()),',
+    '  ]);',
+    '  return { user, orders, notifications };',
+    '  // All 3 fetch simultaneously — not one after another',
+    '}',
+]))
+story.append(PageBreak())
+
+# ═══════════════════════════════════════════════════════════════
+# PART 2 — REACT
+# ═══════════════════════════════════════════════════════════════
+story += h1("Part 2 — React.js")
+story.append(body(
+    'React is a JavaScript library for building user interfaces by composing small, reusable components. '
+    'It uses a virtual DOM to efficiently update only what changed. '
+    'Understanding React deeply — not just using it, but knowing WHY it works the way it does — '
+    'is what separates junior from senior frontend developers in interviews.'
+))
+story.append(PageBreak())
+
+# ── TOPIC 5: useState ─────────────────────────────────────────
+story.append(topic_header('Topic 5 — useState', 'The hook that makes components interactive', GREEN_LIGHT, TEAL_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'useState is a React hook that lets a component remember information between renders. '
+    'Without useState, every time React re-renders a component, all variables reset to their initial values. '
+    'useState stores a value that persists across renders, and when you update it, '
+    'React automatically re-renders the component to show the new value. '
+    'It is the foundation of all interactivity in React.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'React stores state outside the component function. Each component instance has its own state slot in React\'s internal storage.',
+    'When you call setState, React schedules a re-render. It does NOT update state immediately — state updates are asynchronous.',
+    'Never mutate state directly (array.push(), obj.key = value). Always create a new reference. React compares references to detect changes.',
+    'Multiple setState calls in one event handler are batched together — React does one re-render, not multiple.',
+    'The initial value in useState(initialValue) only runs once on the first render.',
+    'For objects and arrays, always spread: setState({ ...prev, key: newValue }) or setState([...prev, newItem]).',
+], TEAL_MID)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'Explain useState. Why should you never mutate state directly?',
+    'useState is a React hook that declares a state variable that persists between renders. '
+    'It returns two things: the current value and a setter function. '
+    'When you call the setter, React schedules a re-render with the new value. '
+    'You should never mutate state directly — like using push() on a state array — '
+    'because React uses reference equality to detect state changes. '
+    'If you mutate the same array, the reference does not change, '
+    'so React does not know the state changed and does not re-render. '
+    'Always create a new array or object: setItems([...items, newItem]). '
+    'This is also why the spread operator is used so much in React state management.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    "import { useState } from 'react';",
+    '',
+    '// Basic counter',
+    'function Counter() {',
+    '  const [count, setCount] = useState(0);',
+    '  return (',
+    '    <div>',
+    '      <p>Count: {count}</p>',
+    '      <button onClick={() => setCount(count + 1)}>+</button>',
+    '      <button onClick={() => setCount(count - 1)}>-</button>',
+    '      <button onClick={() => setCount(0)}>Reset</button>',
+    '    </div>',
+    '  );',
+    '}',
+    '',
+    '// WRONG — mutating state directly (React will not re-render)',
+    '// const [items, setItems] = useState(["a", "b"]);',
+    '// items.push("c");  // BAD — same reference, React ignores it',
+    '',
+    '// CORRECT — always create new array/object',
+    'function TodoList() {',
+    '  const [todos, setTodos] = useState([]);',
+    '  const [input, setInput] = useState("");',
+    '',
+    '  const addTodo = () => {',
+    '    setTodos([...todos, { id: Date.now(), text: input, done: false }]);',
+    '    setInput("");',
+    '  };',
+    '',
+    '  const toggleTodo = (id) => {',
+    '    setTodos(todos.map(t =>',
+    '      t.id === id ? { ...t, done: !t.done } : t',
+    '    ));',
+    '  };',
+    '',
+    '  return (',
+    '    <div>',
+    '      <input value={input} onChange={e => setInput(e.target.value)} />',
+    '      <button onClick={addTodo}>Add</button>',
+    '      {todos.map(t => (',
+    '        <div key={t.id} onClick={() => toggleTodo(t.id)}',
+    '          style={{ textDecoration: t.done ? "line-through" : "none" }}>',
+    '          {t.text}',
+    '        </div>',
+    '      ))}',
+    '    </div>',
+    '  );',
+    '}',
+]))
+story.append(PageBreak())
+
+# ── TOPIC 6: useEffect ────────────────────────────────────────
+story.append(topic_header('Topic 6 — useEffect', 'Side effects — API calls, subscriptions, DOM updates', BLUE_LIGHT, BLUE_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'useEffect runs code after React renders the component. '
+    'It is used for anything that happens outside React\'s rendering process — '
+    'calling an API, setting up an event listener, updating the document title, '
+    'starting a timer, or subscribing to a data source. '
+    'Without useEffect, you cannot do anything asynchronous in a React component.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'useEffect runs AFTER the component renders and the DOM is updated — not during rendering.',
+    'The dependency array [] controls when it runs: no array = runs after every render. [] = runs once on mount. [value] = runs when value changes.',
+    'The cleanup function (return () => {}) runs before the next effect and when the component unmounts. Always cleanup subscriptions and timers.',
+    'You cannot make the useEffect callback itself async — create an async function inside it and call it.',
+    'useEffect with [] is equivalent to componentDidMount in class components.',
+    'Stale closure bug: if you use state inside useEffect but forget to add it to the dependency array, you get old values.',
+], BLUE)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'When does useEffect run? Explain the dependency array.',
+    'useEffect runs after React finishes rendering and the DOM is updated. '
+    'The dependency array controls how often it runs. '
+    'With no dependency array, it runs after every single render — rarely what you want. '
+    'With an empty array [], it runs only once when the component mounts — '
+    'perfect for initial API calls. '
+    'With specific values like [userId], it runs whenever userId changes — '
+    'perfect for fetching data when a prop changes. '
+    'I always include a cleanup function to cancel subscriptions or clear timers '
+    'to prevent memory leaks when the component unmounts. '
+    'One important note: you cannot make the useEffect callback itself async — '
+    'you need to define an async function inside it and call it immediately.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    "import { useState, useEffect } from 'react';",
+    '',
+    'function UserProfile({ userId }) {',
+    '  const [user, setUser]       = useState(null);',
+    '  const [loading, setLoading] = useState(true);',
+    '  const [error, setError]     = useState(null);',
+    '',
+    '  useEffect(() => {',
+    '    // Cannot make the callback itself async',
+    '    // So define async function inside and call it',
+    '    async function fetchUser() {',
+    '      try {',
+    '        setLoading(true);',
+    '        const res  = await fetch(`/api/users/${userId}`);',
+    '        if (!res.ok) throw new Error("User not found");',
+    '        const data = await res.json();',
+    '        setUser(data);',
+    '      } catch (err) {',
+    '        setError(err.message);',
+    '      } finally {',
+    '        setLoading(false);',
+    '      }',
+    '    }',
+    '',
+    '    fetchUser();',
+    '  }, [userId]);  // Re-runs whenever userId changes',
+    '',
+    '  if (loading) return <p>Loading...</p>;',
+    '  if (error)   return <p>Error: {error}</p>;',
+    '  if (!user)   return null;',
+    '  return <h1>{user.name}</h1>;',
+    '}',
+    '',
+    '// Cleanup example — event listener',
+    'function WindowSize() {',
+    '  const [width, setWidth] = useState(window.innerWidth);',
+    '',
+    '  useEffect(() => {',
+    '    const handleResize = () => setWidth(window.innerWidth);',
+    '    window.addEventListener("resize", handleResize);',
+    '',
+    '    return () => {',
+    '      window.removeEventListener("resize", handleResize);',
+    '      // Cleanup runs when component unmounts — prevents memory leak',
+    '    };',
+    '  }, []);  // Only runs once on mount',
+    '',
+    '  return <p>Width: {width}px</p>;',
+    '}',
+]))
+story.append(PageBreak())
+
+# ── TOPIC 7: useContext ────────────────────────────────────────
+story.append(topic_header('Topic 7 — useContext', 'Share state across components without prop drilling', PURPLE_LIGHT, PURPLE_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'Imagine you have a user\'s login information at the top of your app. '
+    'You need it in the navbar, the sidebar, the dashboard, and the profile page — '
+    'all deep inside the component tree. '
+    'Without Context, you would pass it as a prop through every component in between — called prop drilling. '
+    'useContext lets you create a shared "store" that any component can read directly, '
+    'no matter how deeply nested it is.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'Context has three parts: React.createContext() creates the context. Provider wraps the components that need access. useContext() reads the value.',
+    'Any component inside the Provider can access the context value without receiving it as a prop.',
+    'When the context value changes, ALL components consuming that context re-render. Use it for truly global state.',
+    'Context is not a replacement for all state management. Use it for theme, auth, language. Use Redux for complex shared state.',
+    'You can have multiple contexts in one app — one for auth, one for theme, one for cart.',
+], PURPLE)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'What is the difference between useContext and Redux? When would you use each?',
+    'useContext is React\'s built-in solution for sharing state across components without prop drilling. '
+    'It is ideal for simple global values like the current user, theme (dark/light mode), or language preference. '
+    'Redux is a more powerful external library suited for complex state — '
+    'multiple interacting slices of state, middleware for side effects, '
+    'time-travel debugging, and when multiple parts of the app update the same data. '
+    'In my HCL projects, I used Redux Toolkit for complex shared state like user session, '
+    'permissions, and notification data — because it gave us a clear structure and devtools support. '
+    'For simpler things like theme toggling, useContext is cleaner and avoids the Redux boilerplate.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    "import { createContext, useContext, useState } from 'react';",
+    '',
+    '// Step 1: Create the context',
+    'const ThemeContext = createContext("light");',
+    '',
+    '// Step 2: Provider — wrap the app (or part of it)',
+    'function App() {',
+    '  const [theme, setTheme] = useState("light");',
+    '',
+    '  return (',
+    '    <ThemeContext.Provider value={{ theme, setTheme }}>',
+    '      <Navbar />',
+    '      <Dashboard />',
+    '    </ThemeContext.Provider>',
+    '  );',
+    '}',
+    '',
+    '// Step 3: Consumer — any nested component reads context directly',
+    'function Navbar() {',
+    '  const { theme, setTheme } = useContext(ThemeContext);',
+    '  return (',
+    '    <nav style={{ background: theme === "dark" ? "#333" : "#fff" }}>',
+    '      <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>',
+    '        Toggle theme',
+    '      </button>',
+    '    </nav>',
+    '  );',
+    '}',
+    '',
+    '// Dashboard does not need to know about theme at all',
+    'function Dashboard() {',
+    '  return <div><UserCard /></div>;',
+    '}',
+    '',
+    '// UserCard can still access theme directly — no prop drilling',
+    'function UserCard() {',
+    '  const { theme } = useContext(ThemeContext);',
+    '  return <div className={`card card--${theme}`}>User Info</div>;',
+    '}',
+]))
+story.append(PageBreak())
+
+# ── TOPIC 8: Custom Hooks ─────────────────────────────────────
+story.append(topic_header('Topic 8 — Custom Hooks', 'Reusable logic extracted from components', GREEN_LIGHT, TEAL_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'A custom hook is a JavaScript function that starts with "use" and contains React hooks inside it. '
+    'It lets you extract repeated logic from components and reuse it. '
+    'For example, if multiple components fetch data from an API in the same way, '
+    'you can extract that logic into a useFetch hook and use it in all of them. '
+    'Custom hooks are how senior developers write clean, DRY React code.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'Custom hooks are just functions — they are not a special React API. The "use" prefix tells React (and linters) to apply hook rules.',
+    'They can call any built-in hooks: useState, useEffect, useContext, etc.',
+    'They encapsulate stateful logic — not JSX. They return values/functions, not components.',
+    'Each component using a custom hook gets its own isolated state — hooks are not shared between components.',
+    'Custom hooks are the correct way to share stateful logic. Context shares state values. Hooks share logic.',
+], TEAL_MID)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'What are custom hooks? When and why would you create one?',
+    'Custom hooks are functions that start with "use" and encapsulate reusable stateful logic. '
+    'I create a custom hook when I find myself writing the same useState and useEffect pattern '
+    'in multiple components. For example, in my HCL project I had multiple components '
+    'that all needed to fetch data, handle loading states, and handle errors. '
+    'I extracted that into a useFetch hook — it accepts a URL and returns data, loading, and error. '
+    'Every component that needed API data just called useFetch with a URL. '
+    'This removed 20+ lines of duplicate code from each component. '
+    'The key point is: custom hooks share logic, not state. '
+    'Each component using useFetch gets its own independent state.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    "import { useState, useEffect } from 'react';",
+    '',
+    '// Custom hook — useFetch',
+    '// Reusable data fetching with loading + error handling',
+    'function useFetch(url) {',
+    '  const [data, setData]       = useState(null);',
+    '  const [loading, setLoading] = useState(true);',
+    '  const [error, setError]     = useState(null);',
+    '',
+    '  useEffect(() => {',
+    '    async function fetchData() {',
+    '      try {',
+    '        setLoading(true);',
+    '        const res  = await fetch(url);',
+    '        if (!res.ok) throw new Error(`Error: ${res.status}`);',
+    '        const json = await res.json();',
+    '        setData(json);',
+    '      } catch (err) {',
+    '        setError(err.message);',
+    '      } finally {',
+    '        setLoading(false);',
+    '      }',
+    '    }',
+    '    fetchData();',
+    '  }, [url]);',
+    '',
+    '  return { data, loading, error };',
+    '}',
+    '',
+    '// Usage — any component can use this',
+    'function ProductList() {',
+    '  const { data: products, loading, error } = useFetch("/api/products");',
+    '',
+    '  if (loading) return <p>Loading...</p>;',
+    '  if (error)   return <p>Error: {error}</p>;',
+    '  return <ul>{products.map(p => <li key={p.id}>{p.name}</li>)}</ul>;',
+    '}',
+    '',
+    'function UserList() {',
+    '  const { data: users, loading } = useFetch("/api/users");',
+    '  if (loading) return <p>Loading users...</p>;',
+    '  return <ul>{users.map(u => <li key={u.id}>{u.name}</li>)}</ul>;',
+    '}',
+    '// Both components share the LOGIC of useFetch',
+    '// but each has their own independent state',
+]))
+story.append(PageBreak())
+
+# ── TOPIC 9: useCallback and useMemo ─────────────────────────
+story.append(topic_header('Topic 9 — useCallback and useMemo', 'Performance optimisation hooks', AMBER_LIGHT, AMBER_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'Every time a component re-renders, all the functions and computed values inside it are recreated. '
+    'Usually this is fine. But if a function is passed as a prop to a child component, '
+    'or if a computation is very expensive, recreating it every render wastes performance. '
+    'useCallback remembers a function between renders so it is only recreated when its dependencies change. '
+    'useMemo remembers a computed value between renders for the same reason.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'useCallback(fn, deps) — returns the same function reference as long as deps have not changed.',
+    'useMemo(fn, deps) — returns the same computed value as long as deps have not changed.',
+    'Without useCallback, passing a function as a prop creates a new reference every render, causing child re-renders even when data has not changed.',
+    'useCallback is most useful with React.memo() — a child wrapped in React.memo only re-renders if its props change. But if the function prop is always new, it re-renders anyway.',
+    'Do NOT add useCallback/useMemo everywhere. Premature optimisation adds complexity. Only use them when you measure a real performance problem.',
+], AMBER)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'Explain useCallback and useMemo. When should you actually use them?',
+    'useCallback memoizes a function so it keeps the same reference between renders unless its dependencies change. '
+    'useMemo memoizes a computed value for the same reason. '
+    'I use useCallback when passing a function as a prop to a child component wrapped in React.memo — '
+    'this prevents unnecessary child re-renders. '
+    'I use useMemo when a computation is expensive — like filtering or sorting a large array — '
+    'so it does not recalculate on every render when unrelated state changes. '
+    'However, I do not add these hooks everywhere. '
+    'React is already fast. Adding useCallback and useMemo prematurely '
+    'actually makes code harder to read without real performance benefit. '
+    'I only add them when I have identified an actual performance problem using React DevTools Profiler.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    "import { useState, useCallback, useMemo, memo } from 'react';",
+    '',
+    '// Child component wrapped in memo',
+    '// Only re-renders if its props actually change',
+    'const SearchButton = memo(function SearchButton({ onClick }) {',
+    '  console.log("SearchButton rendered");',
+    '  return <button onClick={onClick}>Search</button>;',
+    '});',
+    '',
+    'function SearchPage() {',
+    '  const [query, setQuery] = useState("");',
+    '  const [results, setResults] = useState([]);',
+    '',
+    '  // Without useCallback: new function reference every render',
+    '  // SearchButton would re-render on every keystroke',
+    '  const handleSearch = useCallback(() => {',
+    '    fetch(`/api/search?q=${query}`)                ',
+    '      .then(r => r.json())',
+    '      .then(setResults);',
+    '  }, [query]);  // Only new function when query changes',
+    '',
+    '  // useMemo — expensive calculation only re-runs when results change',
+    '  const sortedResults = useMemo(() => {',
+    '    console.log("Sorting...");',
+    '    return [...results].sort((a, b) => a.title.localeCompare(b.title));',
+    '  }, [results]);',
+    '',
+    '  return (',
+    '    <div>',
+    '      <input value={query} onChange={e => setQuery(e.target.value)} />',
+    '      <SearchButton onClick={handleSearch} />',
+    '      {sortedResults.map(r => <div key={r.id}>{r.title}</div>)}',
+    '    </div>',
+    '  );',
+    '}',
+]))
+story.append(PageBreak())
+
+# ── TOPIC 10: Virtual DOM ─────────────────────────────────────
+story.append(topic_header('Topic 10 — Virtual DOM and Reconciliation', 'How React updates the UI efficiently', BLUE_LIGHT, BLUE_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'Directly manipulating the real browser DOM is slow. '
+    'Every time you change the DOM, the browser has to recalculate layouts and repaint pixels. '
+    'React solves this with the Virtual DOM — a lightweight JavaScript copy of the real DOM. '
+    'When state changes, React updates the Virtual DOM first, compares it to the previous version '
+    '(this comparison is called "diffing" or "reconciliation"), '
+    'and then makes only the minimum necessary changes to the real DOM.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'Virtual DOM is a plain JavaScript object tree that mirrors the real DOM structure.',
+    'When state or props change, React creates a NEW Virtual DOM tree.',
+    'React\'s diffing algorithm (reconciliation) compares old and new Virtual DOM trees to find what changed.',
+    'React updates ONLY the changed parts in the real DOM — called a "patch" or "commit".',
+    'The key prop on list items helps React identify which items changed, were added, or removed during diffing.',
+    'React 18 introduced concurrent rendering — React can pause, interrupt, and resume rendering work based on priority.',
+], BLUE)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'How does the Virtual DOM work? Why is it important?',
+    'The Virtual DOM is a lightweight JavaScript representation of the real DOM. '
+    'When state or props change in React, React first updates a new Virtual DOM tree. '
+    'Then it runs a diffing algorithm called reconciliation — '
+    'comparing the new Virtual DOM with the previous snapshot to find exactly what changed. '
+    'Finally, React batches all the identified changes and applies only those specific updates '
+    'to the real browser DOM in one operation. '
+    'This is important because direct DOM manipulation is expensive — '
+    'every change triggers browser recalculation of layouts and repaints. '
+    'By batching minimal changes, React makes updates much more efficient. '
+    'This is also why we need the key prop on list items — '
+    'it gives React a stable identity for each item during reconciliation, '
+    'so it knows which items are the same, which are new, and which were removed.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    '// Key prop — tells React how to identify each list item',
+    '// WITHOUT key — React cannot efficiently diff the list',
+    'const bad = items.map(item => <div>{item.name}</div>);',
+    '',
+    '// WITH key — React tracks each item by its unique id',
+    'const good = items.map(item => <div key={item.id}>{item.name}</div>);',
+    '',
+    '// Never use array index as key when list can reorder/add/remove',
+    '// Index as key causes bugs when items are reordered',
+    'const buggy = items.map((item, i) => <div key={i}>{item.name}</div>);',
+    '',
+    '// React.memo — prevents re-render if props have not changed',
+    "import { memo } from 'react';",
+    '',
+    'const ProductCard = memo(function ProductCard({ product }) {',
+    '  return (',
+    '    <div className="card">',
+    '      <h2>{product.name}</h2>',
+    '      <p>Rs.{product.price}</p>',
+    '    </div>',
+    '  );',
+    '});',
+    '// ProductCard will NOT re-render if parent re-renders',
+    '// but product prop has not changed',
+]))
+story.append(PageBreak())
+
+# ═══════════════════════════════════════════════════════════════
+# PART 3 — NEXT.JS
+# ═══════════════════════════════════════════════════════════════
+story += h1("Part 3 — Next.js")
+story.append(body(
+    'Next.js is a React framework that adds server-side capabilities, file-based routing, '
+    'built-in optimisations, and full-stack features to React. '
+    'It is now the standard way to build production React applications. '
+    'Almost every Senior Frontend Engineer job in 2025 lists Next.js as required or preferred. '
+    'Understanding how it differs from plain React is the key to interview success.'
+))
+story.append(PageBreak())
+
+# ── TOPIC 11: App Router and File-based Routing ───────────────
+story.append(topic_header('Topic 11 — App Router and File-based Routing', 'Navigation without React Router', GREEN_LIGHT, TEAL_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'In plain React you need React Router — you manually define every route with a Route component. '
+    'In Next.js, routing is automatic and file-based. '
+    'The folder name inside the app/ directory becomes the URL path. '
+    'Create a file at app/about/page.tsx and the /about route automatically exists. '
+    'No configuration, no Route components, no setup needed.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'app/ is the root directory. Every folder inside it with a page.tsx file becomes a URL route.',
+    'page.tsx = the content of the route. layout.tsx = the wrapper around all routes in that folder.',
+    'loading.tsx = automatically shown while page data loads. error.tsx = shown when an error occurs.',
+    'Dynamic routes use square brackets: [id] in the folder name becomes a variable in the URL.',
+    'Route groups use parentheses: (dashboard) groups routes without adding to the URL path.',
+    'Nested layouts: each folder can have its own layout.tsx that wraps only that folder\'s routes.',
+], TEAL_MID)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'How does routing work in Next.js App Router? How is it different from React Router?',
+    'In Next.js App Router, routing is file-system based — you create a folder and a page.tsx file '
+    'inside the app/ directory, and that folder name automatically becomes the URL route. '
+    'No Route components, no BrowserRouter setup, no route configuration needed. '
+    'For dynamic routes like /products/123, I use a folder named [id] — '
+    'the id is then available as a parameter in the component. '
+    'Each folder can also have a layout.tsx that wraps all routes within it — '
+    'perfect for shared navigation or sidebar components. '
+    'Compared to React Router, the main difference is that routing is declarative and implicit — '
+    'the file structure IS the routing configuration. '
+    'This also enables automatic code splitting — each page is its own bundle.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    '// File structure = Routes',
+    'app/',
+    '  page.tsx              ->  /             (homepage)',
+    '  about/page.tsx        ->  /about',
+    '  blog/page.tsx         ->  /blog',
+    '  blog/[slug]/page.tsx  ->  /blog/any-post',
+    '  (auth)/               ->  route group (not in URL)',
+    '    login/page.tsx      ->  /login',
+    '',
+    '// app/blog/[slug]/page.tsx',
+    '// Accessing dynamic parameter',
+    'export default function BlogPost({ params }: { params: { slug: string } }) {',
+    '  return <h1>Post: {params.slug}</h1>;',
+    '}',
+    '',
+    '// app/layout.tsx — wraps ALL pages',
+    'export default function RootLayout({ children }: { children: React.ReactNode }) {',
+    '  return (',
+    '    <html lang="en">',
+    '      <body>',
+    '        <nav>Navbar here</nav>',
+    '        {children}',
+    '        <footer>Footer here</footer>',
+    '      </body>',
+    '    </html>',
+    '  );',
+    '}',
+    '',
+    '// app/blog/layout.tsx — wraps only /blog routes',
+    'export default function BlogLayout({ children }: { children: React.ReactNode }) {',
+    '  return (',
+    '    <div className="blog-container">',
+    '      <aside>Blog sidebar</aside>',
+    '      <main>{children}</main>',
+    '    </div>',
+    '  );',
+    '}',
+]))
+story.append(PageBreak())
+
+# ── TOPIC 12: Server vs Client Components ────────────────────
+story.append(topic_header('Topic 12 — Server vs Client Components', 'The most important Next.js concept', RED_LIGHT, RED_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'In plain React, everything runs in the browser. '
+    'In Next.js App Router, components run on the server by default. '
+    'A Server Component runs on the server, fetches data, and sends finished HTML to the browser — '
+    'no JavaScript bundle sent to the client. '
+    'A Client Component runs in the browser and can use React hooks, handle events, and be interactive. '
+    'You make a component a Client Component by adding "use client" at the top of the file.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'Server Components are the default. They run only on the server. They cannot use useState, useEffect, or any browser APIs.',
+    '"use client" at the top of a file marks it as a Client Component — it runs in the browser like regular React.',
+    'Server Components can import Client Components. But Client Components CANNOT import Server Components.',
+    'Server Components reduce JavaScript bundle size — their code never goes to the browser.',
+    'Server Components can directly await database queries or API calls — no useEffect needed.',
+    'The boundary between server and client is explicit — this is one of the most common interview topics in Next.js.',
+], RED_DARK)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'What is the difference between Server Components and Client Components in Next.js?',
+    'In Next.js App Router, all components are Server Components by default. '
+    'Server Components run exclusively on the server — they can fetch data directly with async/await, '
+    'access databases, and they never send their component code to the browser, '
+    'reducing the JavaScript bundle size. '
+    'Client Components are marked with "use client" at the top of the file. '
+    'They run in the browser and can use React hooks like useState and useEffect, '
+    'handle user events, and access browser APIs. '
+    'My rule of thumb is: if the component needs interactivity — onClick, form inputs, useState — '
+    'it needs "use client". Everything else can be a Server Component. '
+    'Server Components can import and render Client Components, but not vice versa. '
+    'This distinction is important because it helps keep the client-side bundle small and pages fast.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    '// Server Component (default) — runs on server only',
+    '// Can use async/await directly, no useEffect needed',
+    'export default async function ProductsPage() {',
+    '  // This fetch runs on the server — not in the browser',
+    '  const products = await fetch("https://api.example.com/products")',
+    '    .then(r => r.json());',
+    '',
+    '  return (',
+    '    <div>',
+    '      <h1>Products</h1>',
+    '      {products.map(p => (',
+    '        <ProductCard key={p.id} product={p} />',
+    '        // ProductCard can be a Client Component with onClick etc.',
+    '      ))}',
+    '    </div>',
+    '  );',
+    '}',
+    '',
+    '// Client Component — runs in browser',
+    '"use client";',
+    "import { useState } from 'react';",
+    '',
+    'export default function ProductCard({ product }) {',
+    '  const [added, setAdded] = useState(false);',
+    '',
+    '  return (',
+    '    <div>',
+    '      <h2>{product.name}</h2>',
+    '      <button onClick={() => setAdded(true)}>',
+    '        {added ? "Added!" : "Add to cart"}',
+    '      </button>',
+    '    </div>',
+    '  );',
+    '}',
+    '',
+    '// Rule: Server Component can use Client Component',
+    '// Client Component CANNOT use Server Component',
+]))
+story.append(PageBreak())
+
+# ── TOPIC 13: SSR / SSG / ISR / CSR ──────────────────────────
+story.append(topic_header('Topic 13 — SSR, SSG, ISR, CSR', 'Four rendering strategies — know when to use each', PURPLE_LIGHT, PURPLE_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'These four strategies control when and where your page\'s HTML is generated. '
+    'SSG (Static Site Generation) builds the page once at deploy time — fastest, best for content that does not change often. '
+    'SSR (Server Side Rendering) builds the page fresh for every request — always up to date, slower. '
+    'ISR (Incremental Static Regeneration) is the best of both — static but refreshes in the background every X seconds. '
+    'CSR (Client Side Rendering) is what plain React does — browser downloads JS and renders the page.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'SSG: page built at build time. Fast CDN delivery. Use for: blog posts, docs, marketing pages.',
+    'SSR: page built on every request. Always fresh. Use for: dashboards, user-specific pages, live prices.',
+    'ISR: page built at build time + refreshes every N seconds. Use for: product listings, news, e-commerce.',
+    'CSR: page skeleton delivered, content loads in browser via JS. Use for: private user data, highly interactive apps.',
+    'In Next.js App Router: fetch() with no options = SSG. cache: "no-store" = SSR. next: { revalidate: N } = ISR.',
+    '"force-dynamic" export = SSR. Default Server Component with fetch = SSG.',
+], PURPLE)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'Explain SSR vs SSG vs ISR. When would you choose each?',
+    'SSG — Static Site Generation — builds the page once at deploy time. '
+    'The HTML is pre-built and served instantly from a CDN. '
+    'I use SSG for content that does not change often: blog posts, documentation, landing pages. '
+    'SSR — Server Side Rendering — generates fresh HTML on every request. '
+    'I use SSR for dashboards, user profile pages, and pages with real-time data like live prices. '
+    'ISR — Incremental Static Regeneration — is Next.js\'s most powerful option. '
+    'It starts as a static page but automatically regenerates in the background every N seconds. '
+    'This gives you CDN-level speed with near-real-time data freshness. '
+    'I use ISR for product catalogues and news feeds where data changes every few minutes. '
+    'For my portfolio project, I used SSG for all pages since the content does not change, '
+    'which gives the best performance score.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    '// SSG — static at build time (default for Server Components)',
+    'export default async function BlogPage() {',
+    '  const posts = await fetch("https://api.example.com/posts")',
+    '    .then(r => r.json());',
+    '    // No cache option = SSG by default',
+    '  return <PostList posts={posts} />;',
+    '}',
+    '',
+    '// SSR — fresh on every request',
+    'export const dynamic = "force-dynamic"; // OR use cache: "no-store"',
+    'export default async function DashboardPage() {',
+    '  const data = await fetch("https://api.example.com/live", {',
+    '    cache: "no-store"  // never cache, always fresh',
+    '  }).then(r => r.json());',
+    '  return <Dashboard data={data} />;',
+    '}',
+    '',
+    '// ISR — static but refreshes every 60 seconds',
+    'export const revalidate = 60;',
+    'export default async function ProductsPage() {',
+    '  const products = await fetch("https://api.example.com/products", {',
+    '    next: { revalidate: 60 }  // regenerate every 60s',
+    '  }).then(r => r.json());',
+    '  return <ProductGrid products={products} />;',
+    '}',
+]))
+story.append(PageBreak())
+
+# ── TOPIC 14: Server Actions ──────────────────────────────────
+story.append(topic_header('Topic 14 — Server Actions', 'Run server code directly from components', AMBER_LIGHT, AMBER_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'Traditionally, if you wanted to submit a form and save data, '
+    'you needed a separate API endpoint — create a route handler, fetch it from the client, handle the response. '
+    'Server Actions eliminate this. You write a function with "use server" at the top, '
+    'and React/Next.js automatically makes it run on the server when called from the browser. '
+    'You can pass this function directly as a form\'s action attribute.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    '"use server" directive marks a function (or entire file) to run on the server.',
+    'Server Actions can be passed directly as action={} on HTML form elements.',
+    'After a Server Action mutates data, call revalidatePath() to refresh the cached page data.',
+    'Server Actions replace many use cases for API route handlers — but API routes are still better for webhooks, third-party integrations, and custom headers.',
+    'Server Actions can be called from Client Components too — useful for button clicks that save data.',
+], AMBER)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'What are Server Actions in Next.js? How are they different from API routes?',
+    'Server Actions are async functions marked with "use server" that always run on the server, '
+    'even when called from client-side components. '
+    'They are typically used for form submissions and data mutations — '
+    'creating, updating, or deleting data. '
+    'The key benefit is that they eliminate the need to write a separate API route handler '
+    'for simple data mutations. I can write the server logic in the same file and pass it '
+    'directly as the form\'s action. '
+    'After mutating data, I call revalidatePath() to tell Next.js to refresh the cached version of that page. '
+    'API routes are still better when I need custom response headers, webhooks, '
+    'or integrations with third-party services that need a public URL endpoint.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    '// app/actions.ts',
+    '"use server";',
+    "import { revalidatePath } from 'next/cache';",
+    '',
+    'export async function createPost(formData: FormData) {',
+    '  const title   = formData.get("title") as string;',
+    '  const content = formData.get("content") as string;',
+    '',
+    '  // Save to database (this runs on the server)',
+    '  await db.posts.create({ title, content });',
+    '',
+    '  // Refresh the cached /blog page so new post appears',
+    '  revalidatePath("/blog");',
+    '}',
+    '',
+    '// app/blog/new/page.tsx',
+    "import { createPost } from '@/app/actions';",
+    '',
+    'export default function NewPostPage() {',
+    '  return (',
+    '    // Pass Server Action directly as form action',
+    '    <form action={createPost}>',
+    '      <input  name="title"   placeholder="Post title" />',
+    '      <textarea name="content" placeholder="Content" />',
+    '      <button type="submit">Publish</button>',
+    '    </form>',
+    '    // When submitted, createPost runs on server',
+    '    // No fetch call needed, no API route needed',
+    '  );',
+    '}',
+]))
+story.append(PageBreak())
+
+# ═══════════════════════════════════════════════════════════════
+# PART 4 — TYPESCRIPT
+# ═══════════════════════════════════════════════════════════════
+story += h1("Part 4 — TypeScript")
+story.append(body(
+    'TypeScript is JavaScript with static type checking. '
+    'It catches bugs before you run the code — at compile time rather than runtime. '
+    'Over 90% of Senior Frontend roles in India now require TypeScript. '
+    'The good news: if you know JavaScript, TypeScript is just adding type annotations on top. '
+    'You do not need to relearn anything — you just add more information to what you already write.'
+))
+story.append(PageBreak())
+
+# ── TOPIC 15: TypeScript basics ──────────────────────────────
+story.append(topic_header('Topic 15 — Types, Interfaces, Type Aliases', 'The foundation of TypeScript', GREEN_LIGHT, TEAL_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'In JavaScript, a variable can hold any type of value at any time. '
+    'This flexibility causes bugs — you pass a string where a number was expected, '
+    'or access a property that does not exist. '
+    'TypeScript adds types to your variables, function parameters, and return values. '
+    'The TypeScript compiler checks your code before it runs and tells you about mistakes '
+    'before your users ever see them.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'TypeScript is a superset of JavaScript — every valid JS file is valid TypeScript.',
+    'Types are erased at compile time — the browser never sees TypeScript, only the compiled JavaScript.',
+    'interface defines the shape of an object — what properties it has and their types.',
+    'type alias creates a reusable name for any type — union types, intersection types, primitives.',
+    'interface is generally preferred for objects (can be extended, merged). type is better for unions and computed types.',
+    'Optional properties use ? — property?: string means the property may or may not exist.',
+    'The "as" keyword (type assertion) tells TypeScript to trust you about a type — use it sparingly.',
+], TEAL_MID)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'What is the difference between interface and type in TypeScript? When do you use each?',
+    'Both interface and type are used to define the shape of objects in TypeScript. '
+    'The main differences are: interfaces can be extended with the extends keyword and '
+    'can be merged — if you declare the same interface name twice, TypeScript merges them. '
+    'Type aliases are more flexible — they can represent union types, intersection types, '
+    'tuples, and mapped types that interfaces cannot. '
+    'In practice, I use interface for objects that represent entities — User, Product, Order — '
+    'because they can be extended when needed. '
+    'I use type for unions like type Status = "active" | "inactive" | "pending", '
+    'or for utility types and complex type expressions. '
+    'Both work fine for most use cases and the difference is usually a team style preference.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    '// Basic types',
+    'let name: string    = "Vigneswaran";',
+    'let age:  number    = 28;',
+    'let active: boolean = true;',
+    'let scores: number[]  = [85, 90, 78];',
+    '',
+    '// Interface — shape of an object',
+    'interface User {',
+    '  id:       number;',
+    '  name:     string;',
+    '  email:    string;',
+    '  role?:    string;   // optional property',
+    '}',
+    '',
+    '// Extend interface',
+    'interface AdminUser extends User {',
+    '  permissions: string[];',
+    '}',
+    '',
+    '// Type alias — great for unions',
+    'type Status   = "active" | "inactive" | "pending";',
+    'type ID       = string | number;',
+    '',
+    '// Type for object (equivalent to interface for objects)',
+    'type Product = {',
+    '  id:       number;',
+    '  name:     string;',
+    '  price:    number;',
+    '  category: string;',
+    '};',
+    '',
+    '// Using types in functions',
+    'function getUser(id: number): User {',
+    '  return { id, name: "Vignesh", email: "v@test.com" };',
+    '}',
+    '',
+    '// Function that accepts User or AdminUser',
+    'function displayUser(user: User | AdminUser): string {',
+    '  return `${user.name} (${user.email})`;',
+    '}',
+]))
+story.append(PageBreak())
+
+# ── TOPIC 16: Generics ────────────────────────────────────────
+story.append(topic_header('Topic 16 — Generics', 'Reusable types that work with any data', BLUE_LIGHT, BLUE_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'Generics are like type variables. Instead of writing a function that only works with strings, '
+    'or only with numbers, you write a function that works with any type — '
+    'and TypeScript figures out the specific type when you use it. '
+    'Think of it like a box. A generic box can hold anything, '
+    'but once you put something in it, TypeScript knows exactly what type is inside.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'Generic type parameter T is a placeholder — like a variable for a type.',
+    'When you call a generic function, TypeScript infers T from the argument you pass.',
+    'You can constrain generics: <T extends object> means T must be an object type.',
+    'React components, hooks, and utilities are all generic — useState<User | null>(null) is a generic call.',
+    'API response types are a perfect use case: type ApiResponse<T> = { data: T; status: number; message: string }',
+], BLUE)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'What are generics in TypeScript? Give a real example.',
+    'Generics allow you to write reusable, type-safe code that works with multiple types. '
+    'Instead of writing the same function multiple times for different types, '
+    'or using "any" which removes all type safety, '
+    'generics let you parameterise the type like a variable. '
+    'A real example I use: an API response wrapper type — '
+    'ApiResponse<T> with a data field of type T. '
+    'When fetching users, the response type is ApiResponse<User[]>. '
+    'When fetching products, it is ApiResponse<Product[]>. '
+    'The same wrapper type works for any data. '
+    'Another common example is a generic useFetch hook — '
+    'function useFetch<T>(url: string): { data: T | null, loading: boolean } — '
+    'the caller specifies what type the response will be.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    '// Generic function — works with any type',
+    'function getFirstItem<T>(arr: T[]): T | undefined {',
+    '  return arr[0];',
+    '}',
+    '',
+    'getFirstItem([1, 2, 3]);         // TypeScript knows return is number',
+    'getFirstItem(["a", "b", "c"]);   // TypeScript knows return is string',
+    '',
+    '// Generic API response wrapper',
+    'type ApiResponse<T> = {',
+    '  data:    T;',
+    '  status:  number;',
+    '  message: string;',
+    '};',
+    '',
+    'type UserResponse    = ApiResponse<User>;',
+    'type ProductResponse = ApiResponse<Product[]>;',
+    '',
+    '// Generic React hook',
+    'function useFetch<T>(url: string) {',
+    '  const [data, setData]       = useState<T | null>(null);',
+    '  const [loading, setLoading] = useState(true);',
+    '  const [error, setError]     = useState<string | null>(null);',
+    '',
+    '  useEffect(() => {',
+    '    fetch(url)',
+    '      .then(r => r.json())',
+    '      .then((json: T) => setData(json))',
+    '      .catch((err: Error) => setError(err.message))',
+    '      .finally(() => setLoading(false));',
+    '  }, [url]);',
+    '',
+    '  return { data, loading, error };',
+    '}',
+    '',
+    '// Usage — TypeScript knows exactly what data contains',
+    'const { data: users } = useFetch<User[]>("/api/users");',
+    '// users is User[] | null — fully typed',
+]))
+story.append(PageBreak())
+
+# ═══════════════════════════════════════════════════════════════
+# PART 5 — PERFORMANCE + CSS
+# ═══════════════════════════════════════════════════════════════
+story += h1("Part 5 — Performance and CSS")
+story.append(PageBreak())
+
+# ── TOPIC 17: Web Performance ─────────────────────────────────
+story.append(topic_header('Topic 17 — Web Performance and Core Web Vitals', 'What interviewers ask about performance', PURPLE_LIGHT, PURPLE_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'Web performance is about how fast your page loads and how responsive it feels. '
+    'Google measures this with Core Web Vitals — three metrics that directly affect SEO rankings. '
+    'LCP (Largest Contentful Paint) measures how long until the main content is visible. '
+    'FID/INP measures how fast the page responds to interaction. '
+    'CLS measures how much the layout shifts unexpectedly while loading.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'LCP (Largest Contentful Paint) — target under 2.5 seconds. Improve by: preloading hero images, using next/image priority, faster server response.',
+    'INP (Interaction to Next Paint, replaced FID) — target under 200ms. Improve by: breaking up long JavaScript tasks, using web workers.',
+    'CLS (Cumulative Layout Shift) — target under 0.1. Improve by: always specifying image dimensions, reserving space for ads/embeds.',
+    'Code splitting: break your bundle into smaller chunks. React.lazy() and dynamic import() load components only when needed.',
+    'Tree shaking: bundlers (Webpack, Vite) remove unused code automatically. Only import what you use.',
+    'Lighthouse in Chrome DevTools scores your page and tells you exactly what to fix.',
+], PURPLE)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'How do you optimise the performance of a React application?',
+    'I approach performance optimisation in layers. '
+    'At the bundle level: code splitting with React.lazy and dynamic imports so users only download code they need. '
+    'Tree shaking to remove unused dependencies. '
+    'At the rendering level: React.memo to prevent unnecessary component re-renders. '
+    'useCallback and useMemo to avoid recreating functions and values every render. '
+    'Virtualization for long lists using react-window. '
+    'At the network level: lazy loading images — in Next.js, next/image handles this automatically. '
+    'Prefetching data for routes the user is likely to visit. '
+    'Using ISR or SSG in Next.js to serve pre-built HTML instead of server-rendering every request. '
+    'I measure performance using Lighthouse and React DevTools Profiler before and after changes '
+    'to confirm the improvement is real — not just assumed.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    "import { lazy, Suspense } from 'react';",
+    '',
+    '// Code splitting — heavy component loads only when needed',
+    'const HeavyChart = lazy(() => import("./HeavyChart"));',
+    '',
+    'function Dashboard() {',
+    '  return (',
+    '    <Suspense fallback={<div>Loading chart...</div>}>',
+    '      <HeavyChart />',
+    '    </Suspense>',
+    '  );',
+    '}',
+    '',
+    '// Next.js dynamic import — same as lazy() but with extra options',
+    "import dynamic from 'next/dynamic';",
+    "const Map = dynamic(() => import('./Map'), {",
+    '  loading: () => <p>Loading map...</p>,',
+    '  ssr: false,  // only load in browser (Map uses window)',
+    '});',
+    '',
+    '// Image optimisation with next/image',
+    "import Image from 'next/image';",
+    '',
+    'function Hero() {',
+    '  return (',
+    '    <Image',
+    '      src="/hero.jpg"',
+    '      width={1200}',
+    '      height={600}',
+    '      alt="Hero"',
+    '      priority  // Preload — above the fold',
+    '      // Next.js auto-converts to WebP, auto-lazy-loads',
+    '    />',
+    '  );',
+    '}',
+]))
+story.append(PageBreak())
+
+# ── TOPIC 18: CSS important topics ───────────────────────────
+story.append(topic_header('Topic 18 — CSS: Flexbox, Grid, BEM, Responsive', 'CSS questions every interview asks', GREEN_LIGHT, TEAL_DARK))
+story.append(sp(6))
+
+story.append(label('PLAIN ENGLISH EXPLANATION'))
+story.append(body(
+    'CSS controls how elements look and are positioned on the page. '
+    'Flexbox is for one-dimensional layouts — aligning items in a row or column. '
+    'Grid is for two-dimensional layouts — rows AND columns at the same time. '
+    'BEM is a naming convention for CSS classes that keeps styles organised and predictable. '
+    'Responsive design makes your page look good on all screen sizes using media queries.'
+))
+story.append(sp(6))
+
+story.append(label('LOGICAL UNDERSTANDING'))
+story += bullet_row([
+    'Flexbox: flex container controls its direct children. justify-content = main axis. align-items = cross axis.',
+    'Grid: define rows and columns on the container. grid-template-columns: repeat(3, 1fr) makes 3 equal columns.',
+    'BEM naming: Block__Element--Modifier. Example: card__title--highlighted. Avoids class name conflicts.',
+    'Media queries: @media (max-width: 768px) { } applies styles only on screens 768px wide or less.',
+    'CSS specificity: inline style > id > class > element. Understanding this prevents style conflicts.',
+    'CSS variables: --primary-color: #0D9488 defined in :root, used as color: var(--primary-color) everywhere.',
+], TEAL_MID)
+story.append(sp(6))
+
+story.append(label('HOW TO SAY IT IN AN INTERVIEW'))
+story.append(interview_box(
+    'Explain Flexbox vs CSS Grid. When would you use each?',
+    'Flexbox and Grid are both layout tools but designed for different scenarios. '
+    'Flexbox is one-dimensional — it works along a single axis, either a row or a column. '
+    'I use it for: navbars, centering an element both vertically and horizontally, '
+    'laying out a row of buttons or cards, and anywhere items need to flex and wrap. '
+    'CSS Grid is two-dimensional — it handles rows AND columns simultaneously. '
+    'I use it for: overall page layouts (header, sidebar, main, footer), '
+    'image galleries, and any layout where items need to align on both axes. '
+    'In practice, I use Flexbox inside components and Grid for the page-level structure. '
+    'They also work well together — Grid for the layout, Flexbox for the items inside each grid area.'
+))
+story.append(sp(6))
+
+story.append(label('CODE EXAMPLE'))
+story.append(code_block([
+    '/* Flexbox — centering and row layouts */       ',
+    '.navbar {',
+    '  display: flex;',
+    '  justify-content: space-between;  /* space between items on main axis */',
+    '  align-items: center;             /* center on cross axis */',
+    '}',
+    '.center {',
+    '  display: flex;',
+    '  justify-content: center;',
+    '  align-items: center;',
+    '  height: 100vh;',
+    '}',
+    '',
+    '/* Grid — page layout with rows and columns */',
+    '.page {',
+    '  display: grid;',
+    '  grid-template-columns: 240px 1fr;     /* sidebar + main */',
+    '  grid-template-rows: 64px 1fr 48px;   /* header + content + footer */',
+    '  min-height: 100vh;',
+    '}',
+    '.card-grid {',
+    '  display: grid;',
+    '  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));',
+    '  gap: 1rem;',
+    '}',
+    '',
+    '/* BEM naming convention */',
+    '.card { }                     /* Block */',
+    '.card__title { }              /* Element */',
+    '.card__title--featured { }    /* Modifier */',
+    '.card__button { }             /* Element */',
+    '.card__button--disabled { }   /* Modifier */',
+    '',
+    '/* Responsive — mobile-first */',
+    '.container { padding: 1rem; }',
+    '@media (min-width: 768px) {   /* tablet and above */',
+    '  .container { padding: 2rem; max-width: 1200px; margin: 0 auto; }',
+    '}',
+    '',
+    '/* CSS Variables */',
+    ':root {',
+    '  --color-primary: #0D9488;',
+    '  --font-size-body: 1rem;',
+    '}',
+    '.button { background: var(--color-primary); }',
+]))
+story.append(PageBreak())
+
+# ═══════════════════════════════════════════════════════════════
+# PART 6 — BEHAVIORAL INTERVIEW ANSWERS
+# ═══════════════════════════════════════════════════════════════
+story += h1("Part 6 — Behavioural Interview Questions")
+story.append(body(
+    'Technical interviews are not only about code. '
+    'Almost every interview includes behavioural questions — '
+    'about your past projects, how you handle challenges, how you work with teams. '
+    'These questions are answered using the STAR format: '
+    'Situation, Task, Action, Result. '
+    'Here are the most common ones with model answers tailored to your background.'
+))
+story.append(sp(8))
+
+behavioral_qs = [
+    (
+        'Tell me about yourself.',
+        'I am a Senior Frontend Developer with over 4 years of experience building enterprise-grade web applications. '
+        'At HCL Technologies, I work on two main products — My State Street, a banking portal for State Street Corporation, '
+        'and MyHCL Tech, an internal employee service portal used by thousands of employees. '
+        'My core stack is React.js, TypeScript, Redux Toolkit, and Jest. '
+        'I recently started building with Next.js and I am excited about the server-rendering capabilities it brings. '
+        'I am currently looking for a senior frontend role at a product company where I can own features end-to-end '
+        'and contribute to a product that directly impacts users.'
+    ),
+    (
+        'Describe a challenging technical problem you solved.',
+        'On the My State Street banking portal, we had a performance issue where the dashboard was taking over 5 seconds to load '
+        'because it was fetching data from 6 different API endpoints sequentially. '
+        'I identified that these calls were independent — they did not need each other\'s data. '
+        'I refactored the data fetching to use Promise.all() to run all 6 calls in parallel. '
+        'This reduced the total load time from 5 seconds to under 1.5 seconds — a 70% improvement. '
+        'I also added proper loading states and error boundaries so users would see partial data '
+        'rather than a blank screen if any single call failed.'
+    ),
+    (
+        'How do you handle a situation where you do not know the answer?',
+        'I am always honest — I will tell the interviewer or team member that I do not know the answer right now, '
+        'but I know how to find it. I then describe my approach: '
+        'check the official documentation, look at working examples, understand the underlying concept, '
+        'and test my solution before presenting it. '
+        'I believe the ability to learn and find answers is more important than already knowing everything. '
+        'In my experience, the best developers are not the ones who know everything — '
+        'they are the ones who know how to learn quickly and ask the right questions.'
+    ),
+    (
+        'Why are you leaving HCL? / Why do you want to join a product company?',
+        'At HCL I have built strong technical skills and delivered on enterprise projects. '
+        'But in a services company, the work is largely execution-focused — '
+        'requirements come from the client and we implement them. '
+        'I want to be in an environment where I can contribute to product decisions, '
+        'see the direct impact of my work on real users, '
+        'and grow as an engineer by working on a product from ideation to production. '
+        'Product companies give engineers more ownership and faster feedback loops, '
+        'which is the environment I want to grow in for the next stage of my career.'
+    ),
+    (
+        'Where do you see yourself in 3 years?',
+        'In 3 years I see myself as a strong senior frontend engineer who owns complete features, '
+        'mentors junior developers, and actively contributes to frontend architecture decisions. '
+        'I want to be deeply skilled in Next.js and TypeScript at a production level, '
+        'experienced in performance optimisation for large-scale applications, '
+        'and confident in leading small frontend teams or projects. '
+        'My goal is to be the kind of developer a team can rely on for both technical expertise '
+        'and clear communication.'
+    ),
+]
+
+for i, (q, a) in enumerate(behavioral_qs, 1):
+    story.append(interview_box(q, a))
+    story.append(sp(8))
+
+story.append(PageBreak())
+
+# ═══════════════════════════════════════════════════════════════
+# FINAL PAGE
+# ═══════════════════════════════════════════════════════════════
+story += [
+    sp(60),
+    Paragraph('You now have everything you need.',
+        S('fp1', fontName='Helvetica-Bold', fontSize=20, textColor=TEAL,
+          alignment=TA_CENTER, spaceAfter=10)),
+    HRFlowable(width=5*cm, thickness=1.5, color=TEAL, hAlign='CENTER', spaceAfter=14, spaceBefore=4),
+    Paragraph(
+        '18 topics. Full explanations. Interview-ready answers. Logic breakdowns. Working code. '
+        'The only thing left is for you to read, understand, and practice.',
+        S('fp2', fontName='Helvetica', fontSize=11, textColor=DARK,
+          alignment=TA_CENTER, leading=17, spaceAfter=12)),
+    Paragraph(
+        'Read one topic per day. Write the code yourself. Ask Claude to quiz you on each one.',
+        S('fp3', fontName='Helvetica-Bold', fontSize=13, textColor=DARK,
+          alignment=TA_CENTER, spaceAfter=6)),
+    Paragraph('One topic. One day. Build the habit.',
+        S('fp4', fontName='Helvetica', fontSize=11, textColor=MUTED, alignment=TA_CENTER)),
+]
+
+# ── Build ─────────────────────────────────────────────────────
+doc = SimpleDocTemplate(
+    '/home/claude/interview_mastery.pdf',
+    pagesize=A4,
+    leftMargin=MARGIN, rightMargin=MARGIN,
+    topMargin=2*cm, bottomMargin=2*cm,
+    title='Frontend Interview Mastery Guide',
+    author='Claude',
+)
+doc.build(story, onFirstPage=lambda c,d: None, onLaterPages=on_page)
+print('Done')

@@ -1,0 +1,191 @@
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+ 
+/* ── Background Glow (decorative — top right corner) ────── */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(
+    circle,
+    rgba(0, 212, 180, 0.08) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+ 
+/* ── Two Column Layout (text left, photo right) ─────────── */
+.hero-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 60px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+ 
+/* ── Left Side — Text Content ───────────────────────────── */
+.hero-content {
+  flex: 1;
+}
+ 
+/* ── "Hi, I'm" greeting line ────────────────────────────── */
+.hero-greeting {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  color: var(--accent);
+  margin-bottom: 12px;
+  letter-spacing: 0.1em;
+}
+ 
+/* ── Main Name Heading ──────────────────────────────────── */
+.hero-name {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(2.4rem, 5vw, 3.8rem);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+ 
+/* ── Accent Word inside name ────────────────────────────── */
+.hero-name .accent {
+  color: var(--accent);
+}
+ 
+/* ── Job Role ────────────────────────────────────────────── */
+.hero-role {
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+ 
+/* ── Tagline / Short Bio ─────────────────────────────────── */
+.hero-tagline {
+  font-size: 1rem;
+  color: var(--text-muted);
+  max-width: 480px;
+  margin-bottom: 36px;
+  line-height: 1.7;
+}
+ 
+/* ── CTA Buttons Row ─────────────────────────────────────── */
+.hero-cta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+ 
+/* ── Tech Stack Pills Row ────────────────────────────────── */
+.hero-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+ 
+/* ── Individual Stack Tag ────────────────────────────────── */
+.stack-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--accent);
+  border: 1px solid rgba(0, 212, 180, 0.25);
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: var(--accent-dim);
+}
+ 
+/* ── Right Side — Photo Wrapper ─────────────────────────── */
+.hero-image-wrapper {
+  flex-shrink: 0;
+}
+ 
+/* ── Glowing Ring around Photo ───────────────────────────── */
+.hero-image-ring {
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  padding: 6px;
+  box-shadow:
+    0 0 0 1px rgba(0, 212, 180, 0.2),
+    0 0 40px rgba(0, 212, 180, 0.15);
+}
+ 
+/* ── Actual Profile Photo ────────────────────────────────── */
+.hero-photo {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+ 
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — Tablet (max-width: 900px)
+══════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+ 
+  /* Stack vertically — photo on top, text below */
+  .hero-inner {
+    flex-direction: column-reverse;
+    text-align: center;
+    gap: 40px;
+  }
+ 
+  /* Center the tagline */
+  .hero-tagline {
+    margin-left: auto;
+    margin-right: auto;
+  }
+ 
+  /* Center CTA buttons */
+  .hero-cta {
+    justify-content: center;
+  }
+ 
+  /* Center stack tags */
+  .hero-stack {
+    justify-content: center;
+  }
+ 
+  /* Smaller photo on tablet */
+  .hero-image-ring {
+    width: 240px;
+    height: 240px;
+  }
+}
+ 
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — Mobile (max-width: 480px)
+══════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+ 
+  /* Even smaller photo on phone */
+  .hero-image-ring {
+    width: 180px;
+    height: 180px;
+  }
+ 
+  /* Smaller name on small phones */
+  .hero-name {
+    font-size: 2rem;
+  }
+ 
+  /* Stack CTA buttons vertically */
+  .hero-cta {
+    flex-direction: column;
+    align-items: center;
+  }
+}
