@@ -1,7 +1,6 @@
 import './Hero.css';
 // At the top of Hero.js
-import profilePhoto from '../assets/images/vigneswaran-portfolio.png'
-
+import profilePhoto from '../../../assets/images/vigneswaran-portfolio.png'
 // In JSX
 <img src={profilePhoto} alt="Vigneswaran - Frontend Developer" className="hero-photo" />
  
@@ -63,7 +62,7 @@ const Hero = () => {
               {/* Outline button — opens resume in new tab */}
               {/* rel="noopener noreferrer" is a SECURITY requirement with target="_blank" */}
               <a
-                href="/portfolio/Vigneswaran_resume.pdf"
+                href="/portfolio/Vigneswaran_Resume.pdf"
                 className="btn btn-outline"
                 target="_blank"
                 rel="noopener noreferrer"

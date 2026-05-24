@@ -18,7 +18,7 @@
 }
 
 .project-card:hover {
-  border-color: rgba(0, 212, 180, 0.4);
+  border-color:#F97316;;
   transform: translateY(-6px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   background: var(--accent-dim); 

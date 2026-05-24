@@ -1,9 +1,9 @@
 :root{
   --bg-primary:#0a0a0a;
   --bg-secondary:#111111;
-  --bg-card:#00d4b4;
-  --accent: #00d4b4;
-  --accent-dim:rgba(0,212,180,0.1);
+  --accent: #F97316;
+--accent-dim: rgba(249,115,22,0.1);
+--bg-card: #161616;
   --text-primary:#f0f0f0;
   --text-seconday:#888888;
   --text-muted:#555555;
@@ -82,7 +82,7 @@ img{
     color: #000; 
 }
 .btn-primary:hover { 
-    background: #00b89e; 
+    background: #EA580C;
     transform: translateY(-2px); 
 }
 .btn-outline { 

@@ -27,7 +27,7 @@
     transition: var(--transition);
 }
 .stat-card:hover{
-    border-color: rgba(0,212,180,0.4); background: var(--accent-dim); 
+    border-color: #F97316;;
 }
 .stat-num { 
     font-family: var(--font-heading); 

@@ -15,8 +15,7 @@ background: var(--border);
 position: absolute; left: -34px; top: 24px;
 width: 12px; height: 12px; background: var(--accent);
 border-radius: 50%; border: 3px solid var(--bg-primary);
-box-shadow: 0 0 10px rgba(0,212,180,0.5);
-}
+box-shadow: 0 0 10px rgba(249,115,22,0.5);}
 .exp-points li { 
     padding-left: 18px; 
     position: relative; 
